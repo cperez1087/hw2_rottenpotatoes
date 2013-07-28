@@ -1,3 +1,4 @@
+
 class MoviesController < ApplicationController
 
   def show
@@ -7,11 +8,13 @@ class MoviesController < ApplicationController
   end
 
   def index
-    @all_ratings = Movie.ratings
-    @ratings = (params[:ratings]) ? params[:ratings].keys : @all_ratings
+    set_index_persistence
 
-    @sortby = params[:sort]
-    @movies = Movie.order(@sortby)
+    @all_ratings = Movie.ratings
+    @ratings = (session[:movies_index_persistence][:ratings]) ? session[:movies_index_persistence][:ratings].keys : @all_ratings
+
+    @sort_by = session[:movies_index_persistence][:sort]
+    @movies = Movie.order(@sort_by)
     @movies = @movies.where(:rating => @ratings) unless @ratings.empty?
 
   end
@@ -42,6 +45,19 @@ class MoviesController < ApplicationController
     @movie.destroy
     flash[:notice] = "Movie '#{@movie.title}' deleted."
     redirect_to movies_path
+  end
+
+  private
+  def set_index_persistence
+    session[:movies_index_persistence] = {} if session[:movies_index_persistence].nil?
+
+    needs_redirect =  params[:sort] != session[:movies_index_persistence][:sort] ||
+                      params[:ratings] != session[:movies_index_persistence][:ratings]
+
+    session[:movies_index_persistence][:sort] = params[:sort] unless params[:sort].nil?
+    session[:movies_index_persistence][:ratings] = params[:ratings] unless params[:ratings].nil?
+
+    redirect_to movies_path(session[:movies_index_persistence]) if needs_redirect
   end
 
 end
